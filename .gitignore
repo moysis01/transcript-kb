@@ -1,0 +1,29 @@
+# Your library (videos, transcripts, notes): personal data, not code
+/data/
+/kb/
+
+# Claude Code worktrees
+.claude/worktrees/
+
+# Environment and caches
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+*.log
+.DS_Store
+
+# Personal Claude Code settings (launch.json is shared on purpose)
+.claude/settings.local.json
+
+# Docker: your keys and tokens
+.env
+
+# Certificates and keys never go into the repo
+certs/
+*.crt
+*.pem
+*.key
+*.p12

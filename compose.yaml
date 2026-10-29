@@ -1,0 +1,36 @@
+# transcript-kb in Docker:   docker compose up -d   then open http://127.0.0.1:8765
+#
+# Put API keys or a Claude Code token in a .env file next to this one (see .env.example).
+# The library lives in the "library" volume. To use a folder instead, e.g. this project's own data/ and kb/,
+# set TKB_LIBRARY=. in .env, but never while the Mac app is running on the same folder: file locks don't
+# reach across Docker's file sharing, and both would process the same queue.
+
+services:
+  tkb:
+    build: .
+    image: transcript-kb
+    container_name: transcript-kb
+    init: true                      # reaps the video jobs' processes and passes `docker stop` on to the app
+    restart: unless-stopped
+    ports:
+      # 127.0.0.1 only: Settings can run programs (command-line AI providers), so the app must never be
+      # reachable from a network. It answers only at its own port, so the same port inside and out (TKB_PORT).
+      - "127.0.0.1:${TKB_PORT:-8765}:${TKB_PORT:-8765}"
+    volumes:
+      - ${TKB_LIBRARY:-library}:/library
+      - cache:/cache                # Whisper, speaker and search models (downloaded once)
+    environment:
+      TKB_PORT: ${TKB_PORT:-8765}
+      # Optional. Claude Code (the default AI provider): a token from `claude setup-token`, or an API key.
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      # Any setting can be fixed here too, e.g. TKB_MODEL: openai/gpt-4.1 or TKB_ASR_DEVICE: cuda.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # Ollama / LM Studio running on the host (needed on Linux)
+
+volumes:
+  library:
+  cache:

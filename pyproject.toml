@@ -1,0 +1,72 @@
+[project]
+name = "transcript-kb"
+version = "0.1.0"
+description = "YouTube videos -> accurate, noise-free transcripts -> a linked knowledge base you can browse, search and ask"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "yt-dlp>=2025.1.1",
+  # Transcription: MLX on Apple Silicon (Metal GPU); faster-whisper elsewhere (CPU, or CUDA), e.g. in Docker
+  "mlx-whisper>=0.4.2; sys_platform == 'darwin' and platform_machine == 'arm64'",
+  "faster-whisper>=1.1; sys_platform != 'darwin' or platform_machine != 'arm64'",
+  "truststore>=0.10",  # HTTPS uses the operating system's certificate store
+  "sherpa-onnx>=1.13.8",       # speaker detection
+  "sherpa-onnx-core>=1.13.8",  # its ONNX runtime (not always pulled in automatically)
+  "fastembed>=0.7",
+  "mcp>=1.20",
+]
+
+[project.scripts]
+tkb = "tkb.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tkb"]
+
+[tool.uv]
+# faster-whisper 1.2.1 opens audio with an option PyAV 19 removed (metadata_errors): stay below it until it updates
+constraint-dependencies = ["av<19"]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+  "E", "W",  # pycodestyle
+  "F",       # pyflakes: undefined names, unused imports
+  "I",       # import order
+  "UP",      # modern syntax
+  "B",       # likely bugs
+  "SIM",     # simplifications
+]
+ignore = [
+  "E731",    # small lambdas assigned to names read fine here
+  "SIM105",  # explicit try/except/continue is clearer in the I/O loops
+]
+
+[tool.ruff.lint.isort]
+known-local-folder = ["fakes"]  # the tests' shared stand-ins for Claude, YouTube and Whisper
+
+[tool.mypy]
+python_version = "3.13"
+packages = ["tkb"]
+ignore_missing_imports = true  # yt-dlp, mlx-whisper and sherpa-onnx ship without type information
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
